@@ -53,7 +53,7 @@ device = torch.device("cuda" if args.cuda else "cpu")
 kwargs = {'num_workers': 4, 'pin_memory': False} if args.cuda else {}
 print("train_loader")
 
-data_dir = '/home/coline/affordance_world/data/Oct_4tasks_images/'
+data_dir = 'data/Oct_4tasks_images/'
 
     
 def worker_init_fn(worker_id):      

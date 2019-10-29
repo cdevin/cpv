@@ -304,7 +304,7 @@ while True:
                 for num_pol, num_sum in [(1,1), (1,2),(2,1), (2,2),(2,4),(4,1), (4,2),(8,1), (16,1)]:
                     successes = []
                     num_steps = []
-                    example_references= '/home/coline/affordance_world/data/Oct_references_len'+str(num_pol)+'/'
+                    example_references= 'data/Oct_references_len'+str(num_pol)+'/'
                     task_paths = glob.glob(example_references  +'*.npy')
                     if len(task_paths) == 0:
                         print("gllob was empty", example_references +'*')

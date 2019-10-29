@@ -54,7 +54,7 @@ def worker_init_fn(worker_id):
 device = torch.device("cuda" if args.cuda else "cpu")
 
 kwargs = {'num_workers': 4, 'pin_memory': False} if args.cuda else {}
-data_dir =  '/home/coline/affordance_world/data/Oct_4tasks_images/'
+data_dir =  'data/Oct_4tasks_images/'
 
 train_loader = torch.utils.data.DataLoader(
     CompositeDataset(directory=data_dir,
@@ -65,7 +65,7 @@ test_loader = torch.utils.data.DataLoader(
     CompositeDataset(directory=data_dir,
                              train=False, size=args.test_size),
     batch_size=args.batch_size, shuffle=True, worker_init_fn=worker_init_fn, **kwargs)
-print("done laoding")
+print("done loading")
 args.train_size = len(train_loader.dataset)
 start_time = time.time()
 result_list = []

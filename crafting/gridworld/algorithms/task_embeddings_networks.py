@@ -53,10 +53,6 @@ class CNN(nn.Module):
         self.conv1 = layer_init(nn.Conv2d(in_channels, 16, kernel_size=3, stride=3))
         self.conv2 = layer_init(nn.Conv2d(16, 32, kernel_size=3, stride=1,padding=1))
         self.conv3 = layer_init(nn.Conv2d(32, out_channels, kernel_size=3, stride=1,padding=1))
-        #self.conv4 = layer_init(nn.Conv2d(64, out_channels, kernel_size=3, stride=1,padding=1))
-        #self.conv5 = layer_init(nn.Conv2d(128, 256, kernel_size=3, stride=1,padding=1))
-        #self.conv6 = layer_init(nn.Conv2d(256, 128, kernel_size=3, stride=1,padding=1))
-        #self.conv7 = layer_init(nn.Conv2d(128, out_channels, kernel_size=3, stride=1,padding=1))
         self.fc_1  = layer_init(nn.Linear(self.fc_out, feature_dim))
         self.convs = [self.conv1, self.conv2, self.conv3]#, self.conv4,  self.conv7]
 

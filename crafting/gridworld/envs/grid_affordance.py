@@ -8,9 +8,8 @@ from six import StringIO, b
 import copy
 from gym import utils
 from gym.envs.toy_text import discrete
-from scipy.misc import imresize #(arr, size, interp='bilinear', mode=None)[source]
-#RENDER_DIR = '/home/coline/Desktop/renderings/'
-RENDER_DIR = '/persistent/renderings/'
+from scipy.misc import imresize 
+RENDER_DIR = 'renderings/'
 LEFT = 0
 DOWN = 1
 RIGHT = 2
@@ -65,21 +64,11 @@ SPRITES['sticks'][2,0] = np.array([45/255., 82/255., 160/255.])
 SPRITES['axe'][2,1] =  np.array([255/255., 102/255., 102/255.])
 SPRITES['house'][2,2] =  np.array([153/255., 52/255., 255/255.])
 BIGSPRITES = copy.deepcopy(SPRITES)
-#import cv2
-# for k in SPRITES.keys():
-#     cv2.imwrite(k+'_before.png', SPRITES[k]*255)
-#     #img =  imresize((SPRITES[k]*255).astype(np.uint8), (40, 40), interp='nearest')
-#     new_sprite = np.repeat(SPRITES[k]*255,repeats=40, axis = 1)
-#     new_sprite = np.repeat(new_sprite, repeats=40, axis =0)
-#     cv2.imwrite(k+'.png', new_sprite)
 
-#import pdb; pdb.set_trace()
 OBJECTS =['rock', 'hammer', 'tree', 'axe', 'bread', 'sticks', 'house', 'wheat']
-#OBJECT_PROBS = [0.35, 0.05, 0.3, 0.05, 0.05, 0.05, 0.05, 0.1]
 OBJECT_PROBS = [0.25, 0.0, 0.25, 0.0, 0.1, 0.2, 0.0, 0.2]
 
 print("SUM OF PROB", sum(OBJECT_PROBS))
-#OBJECT_LIMITS = {OBJECTS[i-1]: sum(probs[:i]) for i in range(1,len(OBJECT_PROB)+1)}
 
 class HammerWorld(Env):
     """
@@ -104,12 +93,10 @@ class HammerWorld(Env):
         self.reward_function = reward_function
         self.success_function = success_function
         self.nS = nS
-        #self.delta_source =  np.load('/home/coline/affordance_world/affordance_world/GoToHousePolicy_regdeltas.npy')
         self.nA = nA
         self.lastaction=None
         self.batch_reward = batch_reward
         self.visible_agent = visible_agent
-        #print("hellos")
         self.few_obj = few_obj
         self.episode = 0
         self.state_obs = state_obs
@@ -119,7 +106,7 @@ class HammerWorld(Env):
             assert(self.few_obj)
             self.max_num_per_obj = 3
             self.state_space_size = len(OBJECTS)*2*self.max_num_per_obj+2+1+1
-            self.observation_space = spaces.Box(low=0, high=self.nS, shape=(self.state_space_size,))#spaces.Discrete(self.nS)
+            self.observation_space = spaces.Box(low=0, high=self.nS, shape=(self.state_space_size,))
             self.state_space = self.observation_space
             self.goal_space = self.observation_space
         elif self.agent_centric:
@@ -136,15 +123,13 @@ class HammerWorld(Env):
             if size < self.res:
                 new_sprite = np.repeat(SPRITES[obj]*255,  repeats=self.res/size, axis = 1)
                 new_sprite = np.repeat(new_sprite,  repeats=self.res/size, axis =0)
-                #new_sprite = imresize((SPRITES[obj]*255).astype(np.uint8), (self.res, self.res), interp='nearest')
-                #import pdb; pdb.set_trace()
+
                 SPRITES[obj] = new_sprite/255
             size = BIGSPRITES[obj].shape[0]
 
             if size < self.renderres:
                 new_sprite = np.repeat(BIGSPRITES[obj]*255,  repeats=self.renderres/size, axis = 1)
                 new_sprite = np.repeat(new_sprite,  repeats=self.renderres/size, axis =0)
-                #new_sprite = imresize((SPRITES[obj]*255).astype(np.uint8), (self.res, self.res), interp='nearest')
                 BIGSPRITES[obj] = new_sprite/255
         self.BIGSPRITES= BIGSPRITES
         self.SPRITES= SPRITES
@@ -160,28 +145,16 @@ class HammerWorld(Env):
             asset_paths =  glob.glob(asset_path)
             
             self.pretty_render_sprites = {asset.split('/')[-1].split('.')[0]: cv2.imread(asset) for asset in asset_paths}
-#             for name, sprite in self.pretty_render_sprites.items():
-#                 gray_pixels = np.max(sprite, axis=2)
-#                 import pdb; pdb.set_trace()
-#             shapes = [a.shape for a in assets]
-#            
-        #self.seed()
-        #self.reset()
+
         
 
     def sample_objects(self, min_obj=None):
         num_objects = np.random.randint(15,25)
         indices = np.random.multinomial(1, OBJECT_PROBS, size=num_objects)
-        #objc = np.sum(indices, axis=0)
-        #print(list(zip(OBJECTS, objc)))
-        #import pdb;pdb.set_trace()
+
         indices = np.argmax(indices, axis=1)
-        # print("num_obj", num_objects)
-        #import pdb; pdb.set_trace()
-#         obj_counts = {k:0 for k in OBJECTS}
-#         for obj in self.add_objects:
-#             obj_counts[obj] += 1
-        self.objects = []#OBJECTS[i] for i in indices]
+
+        self.objects = []
         for obj in OBJECTS:
             i =1
             self.objects.append(obj)
@@ -195,15 +168,10 @@ class HammerWorld(Env):
                 obj_idx = indices[i]#np.random.randint(0, len(OBJECTS))
                 obj = OBJECTS[obj_idx]
                 self.objects.append(obj)
-        #print("counts", obj_counts)
         return self.objects
 
-#     def seed(self, seed=None):
-#         self.np_random, seed = seeding.np_random(seed)
-#         return [seed]
 
     def from_s(self, s):
-        # todo: test this.
         row = int(s/self.ncol)
         return (row,s- row*self.ncol)
 
@@ -223,20 +191,14 @@ class HammerWorld(Env):
         if init_from_state is None:
             
             self.init_from_state = False
-            #print("reset")
-            #import pdb; pdb.set_trace()
+
             self.state = {}
             self.state[HOLDING] = ''
             self.state['hunger'] = 1.0
             self.state['count'] = 0
             
             if self.goal_dim > 0:
-#                 mean = np.mean(self.delta_source, axis=0)[0]
-#                 std = np.std(self.delta_source, axis=0)[0]
-#                 noise = np.random.standard_normal(128)
-#                 self.goal = (mean+noise*std).astype(np.float32)
                 self.goal = self.reward_function.delta_star
-            #import pdb; pdb.set_trace()
             self.objects = []
             self.sample_objects(min_obj=min_obj)
 
@@ -247,22 +209,16 @@ class HammerWorld(Env):
             self.state['object_counts'] = self.object_counts
             self.state['object_positions'] = {}
             positions = np.random.permutation(self.nS)[:len(self.objects)+1]
-            #positions2 = np.random.permutation([0, self.ncol-1, (self.nrow-1)*(self.ncol-1)-1,  (self.nrow-1)*(self.ncol)-1])[:len(objects)+1]
             agent_pos =  self.from_s(positions[0])
             self.state['agent'] = agent_pos
             for i, ob in enumerate(self.objects):
                 pos = self.from_s(positions[i+1])
                 self.add_obj(ob, pos)
-                # self.state[ob] = pos
-            # self.add_obj('axe', (0,0))
-            # self.add_obj('tree', (0,5))
-            #self.state[pos] = ob
         else:
             self.init_from_state = True
             self.state = init_from_state
             self.object_counts = self.state['object_counts']
             self.obj_max_index = self.state['obj_max_index']
-            #self.obj_max_index = copy.deepcopy(self.object_counts)
             self.objects = self.object_counts.keys()
         self.lastaction=None
         
@@ -275,8 +231,6 @@ class HammerWorld(Env):
         self.init_img = obs.copy()
         if self.goal_dim > 0:
             obs = np.concatenate([obs.flatten(), self.goal.flatten()])
-        #print("goal", self.goal)
-        #print("obs", obs.shape)
         
         return obs.flatten().astype(np.uint8)
 
@@ -288,39 +242,21 @@ class HammerWorld(Env):
                 return pos
 
     def add_obj(self, objtype, pos):
-#         if objtype == 'sticks':
-#             self.verify_env()
-#             print("before adding", objtype, "obj count", self.object_counts[objtype], 'pos', pos)
         if objtype not in self.object_counts:
             self.object_counts[objtype] = 0
         suffix = self.obj_max_index[objtype] + 1
         self.obj_max_index[objtype] += 1
         self.object_counts[objtype] += 1
         self.state['object_positions'][objtype + '_'+str(suffix)] = pos
-#         if objtype == 'sticks':
-#             self.verify_env()
-#             print("----- adding", objtype, "obj count", self.object_counts[objtype], 'pos', pos)
-
     def remove_obj(self, obj):
-#         if obj.startswith('sticks'):
-#             self.verify_env()
-#             print("before removing", obj, "obj count", self.object_counts['sticks'])
         objtype = obj.split('_')[0]
         if objtype not in self.object_counts:
             import pdb; pdb.set_trace()
         self.object_counts[objtype] -= 1
-
-        # if self.object_counts[objtype] == 0:
-        #     del self.object_counts[objtype]
         del self.state['object_positions'][obj]
-#         if obj.startswith('sticks'):
-#             self.verify_env()
-#             print("-----removing", obj, "obj count", self.object_counts['sticks'])
-
 
     def perform_object(self, obj):
         blocked = False
-        # print("performing", obj)
         if obj.startswith('tree'):
             if self.state[HOLDING].startswith('axe'):
                 pos = self.state['object_positions'][obj]
@@ -377,23 +313,6 @@ class HammerWorld(Env):
             return (row, col)
         else:
             return pos
-        
-
-    # def is_blocked(self, row, col):
-    #     for obj in BLOCKING:
-    #         if self.state[obj][0] == row and self.state[obj][1] == col:
-    #             if obj == 'tree' and 'axe' in self.state[HOLDING]:
-    #                 self.state['sticks'] = self.state['tree']
-    #                 del self.state['tree']
-    #                 #self.objects.append('sticks')
-    #                 return False, None
-    #             #Rock and tree cannot be on the same square
-    #             elif obj == 'rock' and 'hammer' in self.state[HOLDING]:
-    #                 del self.state['rock']
-    #                 return False, None
-    #             else:
-    #                 return True, obj
-    #     return False, None
 
     def try_pickup(self):
         pos = self.state[AGENT]
@@ -423,7 +342,6 @@ class HammerWorld(Env):
         my_obj_counts = {k:0 for k in OBJECTS}
         for obj in self.state['object_positions'].keys():
             if obj != 'agent' and obj!='holding' and obj != 'object_counts' and obj!='hunger':
-                #print('counting', obj)
                 objtype = obj.split('_')[0]
                 if objtype not in my_obj_counts:
                     my_obj_counts[objtype] = 0
@@ -438,8 +356,6 @@ class HammerWorld(Env):
 
     def step(self, a):
         total = self.verify_env()
-        # if not self.init_from_state:
-        #     print("total is", total)
         prev_state = copy.deepcopy(self.state)
         self.state['count'] +=1
         assert(total <= self.total_count)
@@ -456,26 +372,17 @@ class HammerWorld(Env):
         else:
             new_pos = self.move_agent(a)
         self.lastaction=a
-        #print("goal", self.goal)
-        #self.state['hunger'] += 0.05
         obs = self.get_obs()
         success = 0
         self.episode_states.append(copy.deepcopy(self.state))
-#         if self.reward_function is not None and not self.batch_reward:
-#             r = self.success_function(prev_state, self.state)
+
         if self.success_function is not None:
             r = self.success_function(prev_state, self.state)
             success = self.success_function(self.init_state, self.state)>0
         #old_delta = self.goal
         if self.goal_dim > 0:
             r = self.get_reward(obs) +r
-        #self.get_reward(obs)
-        #new_delta = self.goal
-        #print("deltadelta", new_delta-old_delta)
-        #print("!!agent", self.state['agent'], "house", self.state['object_positions']['house_1'], 'hunger', self.state['hunger'])
-        #if self.state['count'] > 40:
-        #    d = True
-        #print(self.state['object_counts']['bread'])
+
         if self.goal_dim > 0:
             obs = np.concatenate([obs.flatten(), self.goal.flatten()])
         #success = self.reward_function(self.init_state, self.state)>0
@@ -494,16 +401,13 @@ class HammerWorld(Env):
                 if root is not None:
                     if root in self.SPRITES:
                         row, col = self.state['object_positions'][obj]
-                        #print(row*self.res, (row+1)*self.res, col*self.res, (col+1)*self.res)
-                        #print(img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res].shape)
+
                         img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res, :] += self.SPRITES[root]
 
             if self.visible_agent:
                 row, col = self.state[AGENT]
                 img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res, :] += self.SPRITES[AGENT]
-                #print("agent square",img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res, :]) 
-            #img[(self.nrow)*self.res:(self.nrow+1)*self.res, 0:self.res, :] = self.state['hunger']
-            #img[(self.nrow)*self.res:(self.nrow+1)*self.res, self.res:self.res*2, :] = (len(self.state[HOLDING])>0)
+
             if self.agent_centric:
                 img = self.center_agent(img, self.res)
             w,h,c = img.shape
@@ -525,13 +429,12 @@ class HammerWorld(Env):
                         row, col = self.state[obj]
                         img[row, col] = 'AG'
             img[img=='0.0'] = '  '
-            return img#*#255
+            return img
         
     def imagine_obs(self, state, mode='rgb'):
         if self.state_obs:
             obs = np.zeros(self.state_space_size)
             obs[:2] = state['agent']
-            #OBJECTS =['rock', 'hammer', 'tree', 'axe', 'bread', 'sticks', 'house']
             for obj, pos in state['object_positions'].items():
                 root, num = obj.split('_')
                 num = int(num)-1
@@ -551,16 +454,13 @@ class HammerWorld(Env):
                 if root is not None:
                     if root in self.SPRITES:
                         row, col = state['object_positions'][obj]
-                        #print(row*self.res, (row+1)*self.res, col*self.res, (col+1)*self.res)
-                        #print(img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res].shape)
+
                         img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res, :] += self.SPRITES[root]
 
             if self.visible_agent:
                 row, col = state[AGENT]
                 img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res, :] += self.SPRITES[AGENT]
 
-            #img[(self.nrow)*self.res:(self.nrow+1)*self.res, 0:self.res, :] = self.state['hunger']
-            #img[(self.nrow)*self.res:(self.nrow+1)*self.res, self.res:self.res*2, :] = (len(state[HOLDING])>0)
             
             if self.agent_centric:
                 img = self.center_agent(img, self.res)
@@ -579,8 +479,7 @@ class HammerWorld(Env):
 
     def render(self, mode='rgb'):
         import cv2
-        #res = self.res
-        #self.renderres = 9
+
         if mode == 'rgb':
             img = np.zeros(((self.nrow+1)*self.renderres, self.ncol*self.renderres, 3))
             to_get_obs = self.state['object_positions'].keys()
@@ -589,20 +488,16 @@ class HammerWorld(Env):
                 if root is not None:
                     if root in self.SPRITES:
                         row, col = self.state['object_positions'][obj]
-                        #print(row*self.renderres, (row+1)*self.renderres, col*self.renderres, (col+1)*self.renderres)
-                        #print(img[row*self.renderres:(row+1)*self.renderres, col*self.renderres:(col+1)*self.renderres].shape)
+
                         img[row*self.renderres:(row+1)*self.renderres, col*self.renderres:(col+1)*self.renderres, :] += self.BIGSPRITES[root]
 
             if self.visible_agent:
                 row, col = self.state[AGENT]
                 img[row*self.renderres:(row+1)*self.renderres, col*self.renderres:(col+1)*self.renderres, :] += self.BIGSPRITES[AGENT]
 
-            #img[(self.nrow)*self.renderres:(self.nrow+1)*self.renderres, 0:self.renderres, :] = self.state['hunger']
-            #img[(self.nrow)*self.renderres:(self.nrow+1)*self.renderres, self.renderres:self.renderres*2, :] = (len(self.state[HOLDING])>0)
             if self.agent_centric:
                 img = self.center_agent(img, self.renderres)
             w,h,c = img.shape
-            #print("hunger",self.state['hunger'] )
             img[w-self.renderres:w, 0:self.renderres, 0] = self.state['hunger']
             img[w-self.renderres:w, self.renderres:self.renderres*2, :] = (len(self.state[HOLDING])>0)
             cv2.imwrite(RENDER_DIR+'img{:04d}_{:04d}.png'.format(self.episode, self.state['count']), img*255)
@@ -639,19 +534,16 @@ class HammerWorld(Env):
                             img[(idx[0]+row_offset, idx[1]+col_offset)] = sprite[idx]
 
 
-            #img[(self.nrow)*self.renderres:(self.nrow+1)*self.renderres, 0:self.renderres, :] = self.state['hunger']
-            #img[(self.nrow)*self.renderres:(self.nrow+1)*self.renderres, self.renderres:self.renderres*2, :] = (len(self.state[HOLDING])>0)
             if self.agent_centric:
                 img = self.center_agent(img, self.pretty_render_res)
             w,h,c = img.shape
-            #print("hunger",self.state['hunger'] )
-            #img[w-self.pretty_render_res:w, 0:self.pretty_render_res] = self.state['hunger']*self.pretty_render_sprites['hunger']
+
             if len(self.state[HOLDING])>0:
                 root = self.get_root(self.state[HOLDING])
                 img[w-self.pretty_render_res:w, self.pretty_render_res:self.pretty_render_res*2] = self.pretty_render_sprites[root]
             cv2.imwrite(RENDER_DIR+'pretty_img{:04d}_{:04d}.png'.format(self.episode, self.state['count']), img)
             return img
-        #self.res = res
+
     def check_move_agent(self, a):
         """ Does not actually change state"""
         act = ACTIONS[a]
@@ -686,11 +578,7 @@ class HammerWorld(Env):
                     removes_obj= 'bread'
                 elif obj.startswith('wheat') and self.state[HOLDING].startswith('axe'):
                     removes_obj = 'wheat'
-            #self.state[AGENT] = (row, col)
-            #obj = self.state[HOLDING]
-            #self.state[obj] = (row, col)
         else:
-            #print("out of bounds error")
             blocked = True
         if blocked:
             row, col = pos
@@ -702,63 +590,3 @@ class HammerWorld(Env):
         lengths = [p['env_infos'][-1]['count'] for p in paths]
         length_rate = sum(lengths)/len(lengths)
         return {'SuccessRate': success_rate, 'PathLengthMean': length_rate, 'PathLengthMin':min(lengths)}
-
-    def evaluate_episode(self, observation_path):
-        rewards = self.reward_function(observation_path)
-        print("eval")
-#         prev_state = self.episode_states[0]
-#         rewards = []
-#         for t in range(1,len(self.episode_states) ):
-#             state = self.episode_states[t]
-#             rewards.append(self.reward_function(prev_state, state))
-#             prev_state = state
-        return rewards
-
-    def get_reward(self, obs):
-        if self.agent_centric:
-            img = obs.reshape(((self.nrow+1)*self.res*2, self.ncol*self.res*2, 3))
-            init_img = self.init_img.reshape(((self.nrow+1)*self.res*2, self.ncol*self.res*2, 3))
-        else:
-            img = obs.reshape(((self.nrow+1)*self.res, self.ncol*self.res, 3))
-            init_img = self.init_img.reshape(((self.nrow+1)*self.res, self.ncol*self.res, 3))
-        goal = self.goal
-        newgoal, r = self.reward_function.get_new_delta(img,init_img, goal)
-        #print("goal diff", goal - newgoal)
-        self.goal = newgoal
-        return r
-    
-    def goal_distance(self,state, goal_states ):
-        #print("goal", goal_states[0])
-        #print("state", state[0])
-        return np.sum(np.abs(self.observation(state) - goal_states), axis=1)
-    
-    def observation(self, state):
-        #if np.max(state, dim=1) <= 1:
-        #print("state was converted", state)
-        return state
-        #return state/10 -0.5
-    
-    def extract_goal(self, state):
-#         import torch
-# #         if np.max(state, dim=1) <= 1:
-# #             print("goal was converted", state)
-# #             return state
-#         if isinstance(state, (list,)):
-#             if max(state) > 1:
-#                 output = state/10 -0.5
-#                 output[-2] = hunger
-#                 output[-1] = holding
-#             else: 
-#                 return state
-#         if isinstance(state, np.ndarray):
-#             if np.max(state) > 1:
-#                 return state/10 -0.5
-#             else: 
-#                 return state
-#         #if isinstance(state, (torch.tensor,):
-#         #print("goal", state, type(state), "is isntance", isinstance(state, np.ndarray))
-        
-#         if torch.max(state) > 1:
-#             return state/10 -0.5
-        
-        return state#/10 -0.5

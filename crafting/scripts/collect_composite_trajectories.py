@@ -26,7 +26,7 @@ H2 = HammerWorld(res=3, visible_agent=True, use_exit=True, size=[size,size])
 H= HammerWorld(add_objects =[],res=3, visible_agent=True, use_exit=True, agent_centric=False, goal_dim=0, size=[size,size], few_obj=False)
 task_success = []
 
-basedirectory = '/home/coline/affordance_world/data/Oct_4tasks_images/' 
+basedirectory = 'data/Oct_4tasks_images/' 
 
 if not os.path.isdir(basedirectory):
     os.mkdir(basedirectory)

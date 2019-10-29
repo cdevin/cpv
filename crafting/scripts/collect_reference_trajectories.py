@@ -27,7 +27,7 @@ H= HammerWorld(add_objects =[],res=3, visible_agent=True, use_exit=True, agent_c
 task_success = []
 
 for n in [1,2,4,8,16]:
-    basedirectory = '/home/coline/affordance_world/data/Oct_references_len'+str(n)+'/' 
+    basedirectory = 'data/Oct_references_len'+str(n)+'/' 
     if not os.path.isdir(basedirectory):
         os.mkdir(basedirectory)
     directory = basedirectory

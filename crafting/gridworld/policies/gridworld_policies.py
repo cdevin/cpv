@@ -54,13 +54,7 @@ class BaseGridStatePolicy(SerializablePolicy):
         return target_pos
 
     def get_random_square(self, agent_pos, possible_squares=None, impossible_squares=None):
-        # distances = []
-        # for x in range(self.env.nrow):
-        #     for y in range(self.env.ncol):
-        #         if (x,y) in possible_squares:
-        #             distances.append((abs(agent_pos[0]-x)+abs(agent_pos[1]-y), (x,y)))
-        # distances = sorted(distances)
-        # target_pos = distances[0][1]
+
         if possible_squares is None:
             possible_squares = []
             for x in range(self.env.nrow):
@@ -76,8 +70,7 @@ class BaseGridStatePolicy(SerializablePolicy):
         if agent_pos == target_pos:
             return action_list, state_list, True
         greedy = [sign(target_pos[0]-agent_pos[0]),sign(target_pos[1]-agent_pos[1])]
-        # #import pdb; pdb.set_trace()
-        #print("Trying agent=", agent_pos, "bread = ", target_pos, "num_steps", len(action_list))
+
         newstate = copy.deepcopy(state)
         self.env.reset(init_from_state=newstate)
         if sum([abs(g) for g in greedy]) > 1:
@@ -87,8 +80,7 @@ class BaseGridStatePolicy(SerializablePolicy):
         greedy_action = ACTION_CONVERTER[greedy]
         newpos, blocked = self.env.check_move_agent(greedy_action)
         if not blocked and newpos not in state_list:
-            #print("newpos", newpos, "is not in list", state_list)
-            #print("action", greedy_action, "not blocked")
+
             a = greedy_action
             newstate = copy.deepcopy(state)
             self.env.reset(init_from_state=newstate)
@@ -98,11 +90,8 @@ class BaseGridStatePolicy(SerializablePolicy):
                 return action_list, state_list,good
         possible_actions = np.random.permutation(4)
         for a in possible_actions:
-            #print("Trying action", a,len(action_list))
             newpos, blocked = self.env.check_move_agent(a)
             if not blocked and newpos not in state_list and a !=greedy_action:
-                #print("newpos", newpos, "is not in list", state_list)
-                #print("action", a, "not blocked")
                 newstate = copy.deepcopy(state)
                 self.env.reset(init_from_state=newstate)
                 self.env.step(a)
@@ -111,9 +100,7 @@ class BaseGridStatePolicy(SerializablePolicy):
                     return action_list, state_list,good
                 else:
                     pass
-                    #print("action", a, "blocked")
-        # print("No success found after", len(action_list))
-        #print("plot path action list", action_list)
+
         return action_list, state_list, False
     
     def plot_path_noisy(self, agent_pos, target_pos, state, action_list=[], state_list=[], removeable_objs= []):
@@ -130,8 +117,7 @@ class BaseGridStatePolicy(SerializablePolicy):
             action_list, state_list,good = self.plot_path_noisy(newpos, target_pos, self.env.state, action_list+[a], state_list+[newpos])
             return action_list, state_list,good
         greedy = [sign(target_pos[0]-agent_pos[0]),sign(target_pos[1]-agent_pos[1])]
-        # #import pdb; pdb.set_trace()
-        #print("Trying agent=", agent_pos, "bread = ", target_pos, "num_steps", len(action_list))
+
         newstate = copy.deepcopy(state)
         self.env.reset(init_from_state=newstate)
         if sum([abs(g) for g in greedy]) > 1:
@@ -140,14 +126,9 @@ class BaseGridStatePolicy(SerializablePolicy):
         greedy = tuple(greedy)
         greedy_action = ACTION_CONVERTER[greedy]
         newpos, blocked, removes_obj = self.env.check_move_agent(greedy_action)
-#         if removes_obj is not None and removes_obj not in removeable_objs:
-#             blocked = True
-#         elif removes_obj is not None: 
-#             idx = removeable_objs.index(removes_obj)
-#             removeable_objs[idx] = None
+
         if not blocked and newpos not in state_list:
-            #print("newpos", newpos, "is not in list", state_list)
-            #print("action", greedy_action, "not blocked")
+
             a = greedy_action
             newstate = copy.deepcopy(state)
             self.env.reset(init_from_state=newstate)
@@ -157,16 +138,9 @@ class BaseGridStatePolicy(SerializablePolicy):
                 return action_list, state_list,good
         possible_actions = np.random.permutation(4)
         for a in possible_actions:
-            #print("Trying action", a,len(action_list))
             newpos, blocked, removes_obj = self.env.check_move_agent(a)
-#             if removes_obj is not None and removes_obj not in removeable_objs:
-#                 blocked = True
-#             elif removes_obj is not None: 
-#                 idx = removeable_objs.index(removes_obj)
-#                 removeable_objs[idx] = None
             if not blocked and newpos not in state_list and a !=greedy_action:
-                #print("newpos", newpos, "is not in list", state_list)
-                #print("action", a, "not blocked")
+
                 newstate = copy.deepcopy(state)
                 self.env.reset(init_from_state=newstate)
                 self.env.step(a)
@@ -175,57 +149,25 @@ class BaseGridStatePolicy(SerializablePolicy):
                     return action_list, state_list,good
                 else:
                     pass
-                    #print("action", a, "blocked")
-        # print("No success found after", len(action_list))
-        #print("plot path action list", action_list)
+
         return action_list, state_list, False
-        # else:
-        #     action_list.append(greedy_action)
-        #     self.env.step(greedy_action)
-        #     agent_pos = self.env.state['agent']
-        #     assert(agent_pos == newpos)
-        #     return self.plot_path(newpos, target_pos, self.env.state, action_list)
+
 
     def plot_path(self, agent_pos, target_pos, state, removeable_objs= []):
         for i in range(20):
             action_list=[]
             state_list=[]
-            # if i > 1:
-            #     print("trying for", i,"th time")
-            #print("startingactionlist", action_list)
+
             a,s,good = self.plot_path_noisy( agent_pos, target_pos, state, action_list=action_list, state_list=state_list, removeable_objs=removeable_objs)
             if good:
                 return a,s,good
             else:
-                pass#print("agent_pos", agent_pos, "target_pos", target_pos, "states", s)
+                pass
         return a,s,good
     def get_action(self, state):
         pass
 
 
-# class EatBreadPolicy(BaseGridStatePolicy):
-#     def get_action(self, state):
-#         if len(self.action_queue) == 0:
-#             agent_pos = state['agent']
-#             bread_pos = None
-#             for obj in state.keys():
-#                 if obj.startswith('bread'):
-#                     bread_pos = state[obj]
-#             if bread_pos is None:
-#                 return ACTION_CONVERTER['exit']
-#             out = self.plot_path(agent_pos, bread_pos, state)
-#             print("Got", out)
-#             #import pdb; pdb.set_trace()
-#             actions, states, good = out
-#             self.action_queue = actions
-#             if len(self.action_queue) < 1 or not good:
-#                 return None
-#             a = self.action_queue[0]
-#             self.action_queue = self.action_queue[1:]
-#         else:
-#             a = self.action_queue[0]163
-#             self.action_queue = self.action_queue[1:]
-#         return a
 
 class DropObjectPolicy(BaseGridStatePolicy):
     """Policy goes to a nearby empty square and drops object"""
@@ -261,11 +203,8 @@ class DropObjectPolicy(BaseGridStatePolicy):
                 target_pos = self.get_nearest_square(agent_pos, impossible_squares=nonempty_squares)
             else:
                 target_pos = self.get_random_square(agent_pos, impossible_squares=nonempty_squares+[agent_pos])
-            # print("target pos is ", target_pos)
-            # print("nearest is", self.get_nearest_square(agent_pos, nonempty_squares))
             out = self.plot_path(agent_pos, target_pos, state)
-            # print("Got", out)
-            #import pdb; pdb.set_trace()
+
             actions, states, good = out
             self.success = good
             if not good:
@@ -278,7 +217,6 @@ class DropObjectPolicy(BaseGridStatePolicy):
                 self.action_queue.append(self.move_over_pol.get_action(state))
                 self.action_queue.append(None)
         else:
-            #print("drop pol has queue", self.action_queue)
             a = self.action_queue[0]
             self.action_queue = self.action_queue[1:]
             self.last_action = a
@@ -324,9 +262,6 @@ class GoToCornerPolicy(BaseGridStatePolicy):
 
 class GoToObjectPolicy(BaseGridStatePolicy):
     """ Policy picks up given object"""
-    # def __init__(self, **args):
-    #     super().__init__(**kwargs)
-        #self.drop_obj_pol = DropObjectPolicy()
     def assign_obj(self, obj_name):
         self.target_obj = obj_name
 
@@ -342,26 +277,17 @@ class GoToObjectPolicy(BaseGridStatePolicy):
             if len(obj_squares) == 0:
                 return ACTION_CONVERTER['exit']
             obj_pos =  self.get_nearest_square(agent_pos, possible_squares=obj_squares)
-            #print("goto target_pos", obj_pos)
             out = self.plot_path(agent_pos, obj_pos, state, removeable_objs=[self.target_obj])
-            #print("Got", out)
-            #import pdb; pdb.set_trace()
+
             actions, states, good = out
 
             if len(states) > 0 and states[-1] != obj_pos:
-                # print("GoToObject found bad path: Len:", len(self.action_queue), "good", good)
-                # print("target obj was", self.target_obj, "state was", state)
-                # print("states", states, "obj pos", obj_pos)
+
 
                 return ACTION_CONVERTER['exit']
                 #import pdb; pdb.set_trace()
             self.action_queue = actions
-            #print("goto obj", self.action_queue)
-            #print("path good", good)
-            #print("states", states)
             if len(self.action_queue) < 1 or not good:
-                # print("GoToObject failed to find path: Len:", len(self.action_queue), "good", good)
-                # print("target obj was", self.target_obj, "state was", state)
                 return None
             a = self.action_queue[0]
             self.action_queue = self.action_queue[1:]
@@ -380,7 +306,6 @@ class EatBreadPolicy(GoToObjectPolicy):
         a = super().get_action(state)
         if a is None:
             a = np.random.randint(4)
-            #self.action_queue.append(direction)
             self.action_queue.append(ACTION_CONVERTER['exit'])
         return a
 
@@ -397,23 +322,11 @@ class SimplePickupObjectPolicy(GoToObjectPolicy):
             a = super().get_action(state)
             self.action_queue.append(ACTION_CONVERTER['pickup'])
             self.action_queue.append(None)
-            # print("pickup action queue", self.action_queue)
         else:
-            # print("pickup pol has a queue")
-            # print("pickup action queue", self.action_queue)
+
             a = super().get_action(state)
         return a
-        # if self.started and len(self.action_queue) == 0:
-        # elif len(self.action_queue) == 0:
-        #     a = super().get_action(state)
-        #     self.started = True
-        # else:
-        #     a = super().get_action(state)
-        # if self.state['holding'] == '' and a is None:
-        #     a = ACTION_CONVERTER['pickup']
-        # if self.state['holding'].startswith(self.target_obj):
-        #     return None
-        # return a
+
 class PickupObjectPolicy(BaseGridStatePolicy):
     def __init__(self, *args, target_obj='axe', noise_level=0):
         super().__init__(*args, noise_level=noise_level)
@@ -430,17 +343,13 @@ class PickupObjectPolicy(BaseGridStatePolicy):
         self.policy_queue = [self.drop_obj_pol_near, self.pickup_obj_pol]
 
     def get_action(self, state):
-        # print("state before", state)
-        # new_state = copy.deepcopy(state)
-        
-        #import pdb; pdb.set_trace()
+
         a = self.policy_queue[0].get_action(state)
         if a is None:
             self.policy_queue[0].reset()
             if len(self.policy_queue) == 1:
                 a = ACTION_CONVERTER['exit']
-                #self.reset()
-                #return a
+
             else:
                 self.policy_queue = self.policy_queue[1:]
                 a = self.policy_queue[0].get_action(state)
@@ -512,34 +421,8 @@ class ChopTreePolicy(BaseGridStatePolicy):
             else:
                 self.policy_queue = self.policy_queue[1:]
                 a = self.policy_queue[0].get_action(state)
-        #if a == ACTION_CONVERTER['exit']:
-            #a = np.random.randint(4)
-            #self.action_queue.append(direction)
-        #    self.action_queue.append(ACTION_CONVERTER['exit'])
-            #self.reset()
-        return a
 
-        # if len(self.action_queue) == 0:
-        #     if len(state['holding']) > 0:
-        #         if state['holding'].startswith(self.pickup_obj_pol.target_obj):
-        #             # If holding axe, go to tree
-        #             a = self.goto_obj_pol.get_action(new_state)
-        #             self.action_queue = copy.deepcopy(self.goto_obj_pol.action_queue)
-        #         else:
-        #             # If holding wrong obj, drop it:
-        #             a = self.drop_obj_pol.get_action(new_state)
-        #             self.action_queue = copy.deepcopy(self.drop_obj_pol.action_queue)
-        #     else:
-        #         # If holding nothing, pickup axe
-        #         a = self.pickup_obj_pol.get_action(new_state)
-        #         self.action_queue = copy.deepcopy(self.pickup_obj_pol.action_queue)
-        # else:
-        #     a = self.action_queue[0]
-        #     self.action_queue = self.action_queue[1:]
-        # if a is None:
-        #     a = ACTION_CONVERTER['exit']
-        # # print("state after", state)
-        # return a
+        return a
 
 
 class BuildHousePolicy(ChopTreePolicy):
@@ -580,39 +463,13 @@ class Random():
     
     def reset(self):
         pass
-    
 
-    # def get_action(self, state):
-    #     print("state before", state)
-    #     new_state = copy.deepcopy(state)
-    #     if len(self.action_queue) == 0:
-    #         if len(state['holding']) > 0:
-    #             if state['holding'].startswith(self.pickup_obj_pol.target_obj):
-    #                 # If holding axe, go to tree
-    #                 a = self.goto_obj_pol.get_action(new_state)
-    #                 self.action_queue = self.goto_obj_pol.action_queue
-    #             else:
-    #                 # If holding wrong obj, drop it:
-    #                 a = self.drop_obj_pol.get_action(new_state)
-    #                 self.action_queue = self.drop_obj_pol.action_queue
-    #         else:
-    #             # If holding nothing, pickup axe
-    #             a = self.pickup_obj_pol.get_action(new_state)
-    #             self.action_queue = self.pickup_obj_pol.action_queue
-    #     else:
-    #         a = self.action_queue[0]
-    #         self.action_queue = self.action_queue[1:]
-    #     if a is None:
-    #         a = ACTION_CONVERTER['exit']
-    #     print("state after", state)
-    #     return a
 
 class ChopRockPolicy(ChopTreePolicy):
     def __init__(self, *args, noise_level=0):
         self.pickup_obj_pol = PickupObjectPolicy(*args, target_obj = 'hammer', noise_level=noise_level)
         self.goto_obj_pol = GoToObjectPolicy(*args, noise_level=noise_level)
-#         self.pickup_obj_pol.target_obj = 'axe'
-#         self.goto_obj_pol.target_obj = 'tree'
+
         self.policy_queue = [self.pickup_obj_pol, self.goto_obj_pol]
         self.pickup_obj_pol.target_obj = 'hammer'
         self.goto_obj_pol.target_obj = 'rock'
@@ -642,9 +499,6 @@ class GoToHousePolicy(GoToObjectPolicy):
 
 policies = [EatBreadPolicy, GoToHousePolicy, PickupHammerPolicy, PickupAxePolicy, PickupSticksPolicy, ChopTreePolicy, BuildHousePolicy, ChopRockPolicy, MakeBreadPolicy, Random]
 policy_names = ['EatBreadPolicy', 'GoToHousePolicy', 'PickupHammerPolicy', 'PickupAxePolicy', 'ChopTreePolicy', 'BuildHousePolicy', 'ChopRockPolicy', 'PickupSticksPolicy', 'MakeBreadPolicy', 'random']
-
-# for n in policy_names:
-#     os.mkdir('/media/coline/bigdata/affordance_data/' + n)
 
 policy_dict = {k:v for k,v in zip(policy_names, policies)}
 policy_inputs = {
