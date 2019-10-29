@@ -136,40 +136,7 @@ class TaskEmbeddingModel(nn.Module):
         return actions
     
 
-    
-from rlkit.torch.core import PyTorchModule
 
-class CompositeDotModelV3Policy(CompositeDotModelV3, PyTorchModule):
-    """ [f(s_0, a), (g(s*_0, s*_T) -g(s_0, s_t))]"""
-    def __init__(self, device=None,task_embedding_dim=256, image_shape=(33,30,3)):
-        self.save_init_params(locals())
-        super().__init__(device,task_embedding_dim)
-        self.image_shape = image_shape
-        self.device=device
-        
-    def get_cpr(self, pre_image, post_image):
-        print("model on cuda", next(self.goal_cnn.parameters()).is_cuda)
-        if next(self.goal_cnn.parameters()).is_cuda:
-            pre_image = torch.from_numpy(pre_image.reshape(self.image_shape).transpose((2, 0, 1))).unsqueeze(0).to(self.device)
-            post_image = torch.from_numpy(post_image.reshape(self.image_shape).transpose((2, 0, 1))).unsqueeze(0).to(self.device)
-        else:
-            pre_image = torch.from_numpy(pre_image.reshape(self.image_shape).transpose((2, 0, 1))).unsqueeze(0)#.to(self.device)
-            post_image = torch.from_numpy(post_image.reshape(self.image_shape).transpose((2, 0, 1))).unsqueeze(0)#.to(self.device)
-        goal_feat = self.get_goal_feat(pre_image, post_image).squeeze()
-        return goal_feat
-    
-    def forward(self, obs):
-        cpr_diff = obs[:, -1*task_embedding_dim:]
-        image = obs[:, :task_embedding_dim].reshape(self.image_shape)
-        if image.shape[-1] == 3:
-            # TODO: transposey
-            image.transpose((2, 0, 1))
-            #print("need to transpose")
-        
-        img_feat = self.image_cnn(image)
-        obs = torch.cat((img_feat,  cpr_diff), dim=1)
-        actions = self.mlp(obs)[0].squeeze(1)
-        return actions
     
 class NaiveModel(nn.Module):
     """ [f(s_0, a), (g(s*_0, s*_T) -g(s_0, s_t))]"""

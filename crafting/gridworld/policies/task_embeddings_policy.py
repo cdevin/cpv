@@ -2,7 +2,6 @@ import numpy as np
 import math
 import random
 
-from rlkit.policies.base import SerializablePolicy
 import torch
 import glob
 #from skimage import io, transform
@@ -15,7 +14,7 @@ from gridworld.algorithms.composite_dataset import ActionToTensor, StateActionTo
 # 0: UP
 import torch
 
-class LearnedTECNetPolicy(SerializablePolicy):
+class LearnedTECNetPolicy():
     """
     
     """

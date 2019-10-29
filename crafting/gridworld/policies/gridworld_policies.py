@@ -3,7 +3,7 @@ import numpy as np
 import math
 import random
 
-from rlkit.policies.base import SerializablePolicy
+#from rlkit.policies.base import SerializablePolicy
 
 from gridworld.envs.grid_affordance import HammerWorld, ACTIONS
 import copy
@@ -22,7 +22,7 @@ def sign(x):
     else:
         return x
 
-class BaseGridStatePolicy(SerializablePolicy):
+class BaseGridStatePolicy():
     """
     Policy that always outputs zero.
     """

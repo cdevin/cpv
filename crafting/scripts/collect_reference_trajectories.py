@@ -55,6 +55,8 @@ for n in [1,2,4,8,16]:
     while saved < 20*n:
         num_policies = n 
         policy_list = np.random.choice(policy_names, size = num_policies)
+        truncated_policy_list = [n[:-6] for n in policy_list]
+        policy_n = '_'.join(truncated_policy_list)
         policy = CompositePolicy(policy_list, H.action_space, H2, noise_level=0.1)
         if episode % 10 == 0 and len(task_success)> 0:
             print(episode, sum(task_success)/len(task_success), "saved", saved)
@@ -113,9 +115,9 @@ for n in [1,2,4,8,16]:
                 for style in ['ref']:
                     image_arr = data[style][1]
                     saved+=1
-                    np.save(directory+'/episode{:04d}_'.format(episode)+style+'.npy', image_arr)
+                    np.save(directory+'/'+policy_n+'_episode{:04d}_'.format(episode)+style+'.npy', image_arr)
                     object_counts = {obj: [s['object_counts'][obj] for s in states] for obj in OBJECTS}
-                    with open(directory+'/episode{:04d}_'.format(episode)+style+'_counts.pkl', 'wb') as f:
+                    with open(directory+'/'+policy_n+'_episode{:04d}_'.format(episode)+style+'_counts.pkl', 'wb') as f:
                         pickle.dump(object_counts, f)
             episode += 1
     print( "success rate", sum(task_success)/len(task_success), saved/episode)

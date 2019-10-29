@@ -37,7 +37,7 @@ parser.add_argument('--resume', type=str, default=None,
                     help='A model to load')
 parser.add_argument('--modelV', type=int, default=3,
                     help='A model to load')
-parser.add_argument('--feature-dim', type=int, default=256)a
+parser.add_argument('--feature-dim', type=int, default=256)
 parser.add_argument('-H', action='store_true', default=False,
                     help='use hom loss')
 parser.add_argument('-P', action='store_true', default=False,
