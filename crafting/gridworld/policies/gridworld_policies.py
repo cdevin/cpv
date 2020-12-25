@@ -2,6 +2,7 @@
 import numpy as np
 import math
 import random
+import collections 
 
 #from rlkit.policies.base import SerializablePolicy
 
@@ -65,105 +66,69 @@ class BaseGridStatePolicy():
         target_pos = possible_squares[target]
         #print("drop target_pos", target_pos)
         return target_pos
-
-    def plot_path2(self, agent_pos, target_pos, state, action_list=[], state_list=[]):
-        if agent_pos == target_pos:
-            return action_list, state_list, True
-        greedy = [sign(target_pos[0]-agent_pos[0]),sign(target_pos[1]-agent_pos[1])]
-
-        newstate = copy.deepcopy(state)
-        self.env.reset(init_from_state=newstate)
-        if sum([abs(g) for g in greedy]) > 1:
-            idx = random.randint(0,1)
-            greedy[idx] = 0
-        greedy = tuple(greedy)
-        greedy_action = ACTION_CONVERTER[greedy]
-        newpos, blocked = self.env.check_move_agent(greedy_action)
-        if not blocked and newpos not in state_list:
-
-            a = greedy_action
-            newstate = copy.deepcopy(state)
-            self.env.reset(init_from_state=newstate)
-            self.env.step(a)
-            action_list, state_list,good = self.plot_path2(newpos, target_pos, self.env.state, action_list+[a], state_list+[newpos])
-            if good:
-                return action_list, state_list,good
-        possible_actions = np.random.permutation(4)
-        for a in possible_actions:
-            newpos, blocked = self.env.check_move_agent(a)
-            if not blocked and newpos not in state_list and a !=greedy_action:
-                newstate = copy.deepcopy(state)
-                self.env.reset(init_from_state=newstate)
-                self.env.step(a)
-                action_list, state_list,good = self.plot_path2(newpos, target_pos, self.env.state, action_list+[a], state_list+[newpos])
-                if good:
-                    return action_list, state_list,good
-                else:
-                    pass
-
-        return action_list, state_list, False
     
-    def plot_path_noisy(self, agent_pos, target_pos, state, action_list=[], state_list=[], removeable_objs= []):
-        noise_level = self.noise_level
-        if agent_pos == target_pos:
-            return action_list, state_list, True
-        rand = np.random.random()
-        if rand < noise_level:
-            a = np.random.permutation(4)[0]
-            newstate = copy.deepcopy(state)
-            self.env.reset(init_from_state=newstate)
-            self.env.step(a)
-            newpos = self.env.state['agent']
-            action_list, state_list,good = self.plot_path_noisy(newpos, target_pos, self.env.state, action_list+[a], state_list+[newpos])
-            return action_list, state_list,good
-        greedy = [sign(target_pos[0]-agent_pos[0]),sign(target_pos[1]-agent_pos[1])]
+    def state2grid(self, state, impassable_objects):
+        grid = np.zeros((self.env.nrow, self.env.ncol))
+        #import pdb; pdb.set_trace()
+        for obj, pos in state['object_positions'].items():
+            #print("obj", obj, pos)
+            if '_' in obj:
+                root =  obj.split('_')[0]
+                if root in impassable_objects:
+                    #print("objc is impassable", pos)
+                    grid[pos[0], pos[1]] = 1
+        return grid
+    
+    def get_impassable_objects(self, state):
+        objects = []
+        if state['holding'] == '':
+            objects += ['rock', 'tree']
+        elif state['holding'].startswith('axe'):
+            objects.append('rock')
+        elif state['holding'].startswith('hammer'):
+            objects.append('tree')
+        return objects
+    
+    def BFS(self, agent_pos, target_pos, grid):
+        """
+        agent_pos: tuple of (x,y) agent position
+        target_pos: tuple of (x,y) target position
+        grid: numpy array of 0s in traversable space and 1s in free space
+        """
+        wall = 1
+        queue = collections.deque([[agent_pos]])
+        seen = set([agent_pos])
+        while queue:
+            path = queue.popleft()
+            x, y = path[-1]
+            if (x,y) == target_pos:
+                return path
+            action_list = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+            random.shuffle(action_list)
+            for action in action_list:
+                x2, y2 = x+action[0], y+action[1]
+                if 0 <= x2 < grid.shape[0] and 0 <= y2 < grid.shape[1] and grid[x2][y2] != wall and (x2, y2) not in seen:
+                    queue.append(path + [(x2, y2)])
+                    seen.add((x2, y2))
+    
+    def plot_path(self, agent_pos, target_pos, state, impassable_objects, optional_impassables=[]):
+        path = None
+        while path is None and len(optional_impassables) > 0:
+            grid = self.state2grid(state, impassable_objects + optional_impassables)
+            noise_level = self.noise_level
+            path = self.BFS(agent_pos, target_pos, grid)
+            if path is None:
+                optional_impassables = optional_impassables[:-1]
+        if path is None:
+            actions = []  
+        else:
+            actions_raw  = [(sign(pos[0]-pre_pos[0]),sign(pos[1]-pre_pos[1])) for
+                               pos, pre_pos  in zip(path[1:], path[:-1])]
+            actions = [ACTION_CONVERTER[act] for act in actions_raw]
+        return actions, path, path is not None
 
-        newstate = copy.deepcopy(state)
-        self.env.reset(init_from_state=newstate)
-        if sum([abs(g) for g in greedy]) > 1:
-            idx = random.randint(0,1)
-            greedy[idx] = 0
-        greedy = tuple(greedy)
-        greedy_action = ACTION_CONVERTER[greedy]
-        newpos, blocked, removes_obj = self.env.check_move_agent(greedy_action)
-
-        if not blocked and newpos not in state_list:
-
-            a = greedy_action
-            newstate = copy.deepcopy(state)
-            self.env.reset(init_from_state=newstate)
-            self.env.step(a)
-            action_list, state_list,good = self.plot_path_noisy(newpos, target_pos, self.env.state, action_list+[a], state_list+[newpos],removeable_objs=removeable_objs)
-            if good:
-                return action_list, state_list,good
-        possible_actions = np.random.permutation(4)
-        for a in possible_actions:
-            newpos, blocked, removes_obj = self.env.check_move_agent(a)
-            if not blocked and newpos not in state_list and a !=greedy_action:
-
-                newstate = copy.deepcopy(state)
-                self.env.reset(init_from_state=newstate)
-                self.env.step(a)
-                action_list, state_list,good = self.plot_path_noisy(newpos, target_pos, self.env.state, action_list+[a], state_list+[newpos], removeable_objs=removeable_objs)
-                if good:
-                    return action_list, state_list,good
-                else:
-                    pass
-
-        return action_list, state_list, False
 
 
-    def plot_path(self, agent_pos, target_pos, state, removeable_objs= []):
-        for i in range(20):
-            action_list=[]
-            state_list=[]
-
-            a,s,good = self.plot_path_noisy( agent_pos, target_pos, state, action_list=action_list, state_list=state_list, removeable_objs=removeable_objs)
-            if good:
-                return a,s,good
-            else:
-                pass
-        return a,s,good
     def get_action(self, state):
         pass
 
@@ -177,7 +142,7 @@ class DropObjectPolicy(BaseGridStatePolicy):
         self.except_object = except_object
         self.move_over_pol = MoveOverPolicy(*args, noise_level=noise_level)
         self.last_action = None
-
+        
     def get_action(self, state):
         #print("running drop pol", self.nearest, "nearest")
         if len(self.action_queue) == 0:
@@ -203,7 +168,9 @@ class DropObjectPolicy(BaseGridStatePolicy):
                 target_pos = self.get_nearest_square(agent_pos, impossible_squares=nonempty_squares)
             else:
                 target_pos = self.get_random_square(agent_pos, impossible_squares=nonempty_squares+[agent_pos])
-            out = self.plot_path(agent_pos, target_pos, state)
+            impassable_objects = self.get_impassable_objects(state)
+            optional_impassables = ['bread', 'sticks', 'wheat']
+            out = self.plot_path(agent_pos, target_pos, state, impassable_objects, optional_impassables)
 
             actions, states, good = out
             self.success = good
@@ -228,7 +195,10 @@ class MoveOverPolicy(BaseGridStatePolicy):
             agent_pos = state['agent']
             obj_positions = state.obj_positions.values()
             target_pos = self.get_nearest_square(agent_pos, impossible_squares=[agent_pos]+obj_positions)
-            out = self.plot_path(agent_pos, target_pos, state)
+            impassable_objects = self.get_impassable_objects(state)
+            optional_impassables = ['bread', 'sticks', 'wheat']
+            out = self.plot_path(agent_pos, target_pos, state, impassable_objects, optional_impassables)
+
             # print("Got", out)
             #import pdb; pdb.set_trace()
             actions, states, good = out
@@ -246,7 +216,8 @@ class GoToCornerPolicy(BaseGridStatePolicy):
         if len(self.action_queue) == 0:
             agent_pos = state['agent']
             target_pos = (0,0)#self.get_nearest_square(agent_pos, impossible_squares=[agent_pos])
-            out = self.plot_path(agent_pos, target_pos, state)
+            impassable_objects = self.get_impassable_objects(state)# + ['bread', 'sticks', 'wheat']
+            out = self.plot_path(agent_pos, target_pos, state, impassable_objects)
             # print("Got", out)
             #import pdb; pdb.set_trace()
             actions, states, good = out
@@ -277,11 +248,17 @@ class GoToObjectPolicy(BaseGridStatePolicy):
             if len(obj_squares) == 0:
                 return ACTION_CONVERTER['exit']
             obj_pos =  self.get_nearest_square(agent_pos, possible_squares=obj_squares)
-            out = self.plot_path(agent_pos, obj_pos, state, removeable_objs=[self.target_obj])
+            impassable_objects = self.get_impassable_objects(state) 
+            optional_impassables = []
+            for obj in  ['bread', 'sticks', 'wheat']:
+                if not obj.startswith(self.target_obj):
+                    optional_impassables.append(obj)
+
+            out = self.plot_path(agent_pos, obj_pos, state, impassable_objects, optional_impassables)
 
             actions, states, good = out
 
-            if len(states) > 0 and states[-1] != obj_pos:
+            if not good or len(states) > 0 and states[-1] != obj_pos:
 
 
                 return ACTION_CONVERTER['exit']
