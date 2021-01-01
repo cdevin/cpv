@@ -27,7 +27,7 @@ To train a CPV-Full model, run
 
 `mkdir octresults`
 
-`python crafting/gridworld/algorithms/cpv_experiments.py -H -P`
+`python crafting/gridworld/algorithms/cpv_experiment.py -H -P`
 
 This script will print where the checkpoints are saved and where the tensorboard logs are saved.
 
