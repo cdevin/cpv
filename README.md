@@ -29,11 +29,10 @@ To train a CPV-Full model, run
 
 `python crafting/gridworld/algorithms/cpv_experiments.py -H -P`
 
-This script will print where teh checkpoints are saved and where the tensorboard logs are saved.
+This script will print where the checkpoints are saved and where the tensorboard logs are saved.
 
 To evaluate the model online, run
 
 `python crafting/scripts/run_model_multitask_tensorboard.py --model [path/to/checkpoints_dir] --tb [path/to/tensorboard_dir] --type V3`
 
-The code for grasper experiments is coming soon!
 
