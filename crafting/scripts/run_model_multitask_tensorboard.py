@@ -44,7 +44,7 @@ parser.add_argument('--start-idx', type=int, default=0,
 parser.add_argument('--end-idx', type=int, default=None,
                     help='model index to end at')
 parser.add_argument('--num-policies', type=int, default=4,
-                    help='length of trajecotries to eval on')
+                    help='length of trajectories to eval on')
 parser.add_argument('--cpu', action='store_true', default=False,
                     help='use cpu')
 parser.add_argument('--num-sum',  type=int, default=1,

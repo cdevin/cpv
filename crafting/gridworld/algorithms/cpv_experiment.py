@@ -121,13 +121,12 @@ def train(epoch):
             feat_loss = g_matching_loss(forward_feat+back_feat, final_feat)
             loss+= feat_loss#+feat_loss2
             total_feat_loss += feat_loss.item()
-
         acc = accuracy(logpi,action).item() #/len(image)
         num_batch +=len(image)
         loss.backward()
         train_loss += loss.item() #/len(image)
         train_acc += acc#.item()# /len(image)
-        
+        feat_loss_total += total_feat_loss
         optimizer.step()
         #prev_image, prev_last_image, prev_pos = image, last_image, pos
         #prev_deltas, prev_features = deltas, agent_features
