@@ -64,7 +64,12 @@ SPRITES['sticks'][2,0] = np.array([45/255., 82/255., 160/255.])
 SPRITES['axe'][2,1] =  np.array([255/255., 102/255., 102/255.])
 SPRITES['house'][2,2] =  np.array([153/255., 52/255., 255/255.])
 BIGSPRITES = copy.deepcopy(SPRITES)
-
+SORTED_SPRITES = sorted(SPRITES.keys())
+SPRITE2INDEX = {k: i for i, k in enumerate(SORTED_SPRITES)}
+print("SPRITE2INDEX", SPRITE2INDEX)
+ONE_HOT_SPRITES = {k : np.eye(len(SPRITES))[SPRITE2INDEX[k]] for k in SORTED_SPRITES}
+print("SPRITE2INDEX", SPRITE2INDEX)
+print(ONE_HOT_SPRITES)
 OBJECTS =['rock', 'hammer', 'tree', 'axe', 'bread', 'sticks', 'house', 'wheat']
 OBJECT_PROBS = [0.25, 0.0, 0.25, 0.0, 0.1, 0.2, 0.0, 0.2]
 
@@ -78,7 +83,9 @@ class HammerWorld(Env):
     metadata = {'render.modes': ['rgb', 'ansi']}
 
     def __init__(self, size=[10,10], res=39, add_objects=[], visible_agent=True, reward_function=None, state_obs=False, few_obj=False,
-                 use_exit=False, agent_centric=True, batch_reward=False, success_function=None, goal_dim=0, pretty_renderable=False):
+                 use_exit=False, agent_centric=True, batch_reward=False, success_function=None, goal_dim=0, pretty_renderable=False,
+                 render_mode='one_hot',
+                ):
         self.nrow, self.ncol = size
         self.reward_range = (0, 1)
         self.renderres = 9
@@ -102,6 +109,9 @@ class HammerWorld(Env):
         self.state_obs = state_obs
         self.action_space = spaces.Discrete(self.nA)
         self.goal_dim=goal_dim
+        self.render_mode = render_mode
+        if self.state_obs:
+            self.render_mode = 'state'
         if self.state_obs:
             assert(self.few_obj)
             self.max_num_per_obj = 3
@@ -112,27 +122,33 @@ class HammerWorld(Env):
         elif self.agent_centric:
             self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*res*2*self.ncol*res*2*3+goal_dim,))
             
-        else:
+        elif render_mode == 'rgb':
             self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*res*self.ncol*res*3+goal_dim,))
+        elif render_mode == 'one_hot':
+            res = 1
+            self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*res*self.ncol*res*len(SPRITES)+goal_dim,))
+
         self.objects = []
         self.res = res
 
-
         for obj in SPRITES.keys():
-            size = SPRITES[obj].shape[0]
-            if size < self.res:
-                new_sprite = np.repeat(SPRITES[obj]*255,  repeats=self.res/size, axis = 1)
-                new_sprite = np.repeat(new_sprite,  repeats=self.res/size, axis =0)
+            if self.render_mode == 'rgb':
+                size = SPRITES[obj].shape[0]
+                if size < self.res:
+                    new_sprite = np.repeat(SPRITES[obj]*255,  repeats=self.res/size, axis = 1)
+                    new_sprite = np.repeat(new_sprite,  repeats=self.res/size, axis =0)
 
-                SPRITES[obj] = new_sprite/255
+                    SPRITES[obj] = new_sprite/255
+                    
+
             size = BIGSPRITES[obj].shape[0]
-
             if size < self.renderres:
                 new_sprite = np.repeat(BIGSPRITES[obj]*255,  repeats=self.renderres/size, axis = 1)
                 new_sprite = np.repeat(new_sprite,  repeats=self.renderres/size, axis =0)
                 BIGSPRITES[obj] = new_sprite/255
+        
         self.BIGSPRITES= BIGSPRITES
-        self.SPRITES= SPRITES
+        self.SPRITES = SPRITES
 
         if pretty_renderable:
             import os
@@ -227,11 +243,10 @@ class HammerWorld(Env):
         self.total_count = total
         self.init_state = copy.deepcopy(self.state)
         self.episode_states = [self.init_state]
-        obs = self.get_obs()
+        obs = self.get_obs(mode=self.render_mode)
         self.init_img = obs.copy()
         if self.goal_dim > 0:
             obs = np.concatenate([obs.flatten(), self.goal.flatten()])
-        
         return obs.flatten().astype(np.uint8)
 
     def sample_free_square(self):
@@ -372,7 +387,7 @@ class HammerWorld(Env):
         else:
             new_pos = self.move_agent(a)
         self.lastaction=a
-        obs = self.get_obs()
+        obs = self.get_obs(mode=self.render_mode)
         success = 0
         self.episode_states.append(copy.deepcopy(self.state))
 
@@ -416,6 +431,33 @@ class HammerWorld(Env):
             if CLIP:
                 img = np.clip(img, 0, 1.0)
             return img.flatten()*255
+        if mode == 'one_hot':
+            img = np.zeros(((self.nrow+1)*self.res, self.ncol*self.res, len(SPRITES)))
+            to_get_obs = self.state['object_positions'].keys()
+            for obj in to_get_obs:
+                root = self.get_root(obj)
+                if root is not None:
+                    if root in ONE_HOT_SPRITES:
+                        row, col = self.state['object_positions'][obj]
+                        sprite_index = SPRITE2INDEX[root]
+                        
+                        img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res, :] += ONE_HOT_SPRITES[root]
+
+            if self.visible_agent:
+                row, col = self.state[AGENT]
+                img[row*self.res:(row+1)*self.res, col*self.res:(col+1)*self.res, :] += ONE_HOT_SPRITES[AGENT]
+
+            if self.agent_centric:
+                img = self.center_agent(img, self.res)
+            w,h,c = img.shape
+            img[w-self.res:w, 0:self.res, 0] = self.state['hunger']
+            if len(self.state[HOLDING]) > 0:
+                root = self.get_root(self.state[HOLDING])
+                if root in ONE_HOT_SPRITES:
+                    img[w-self.res:w, self.res:self.res*2, :] =  ONE_HOT_SPRITES[root]
+            if CLIP:
+                img = np.clip(img, 0, 1.0)
+            return img.flatten()
         if mode == 'ascii':
             img = np.zeros((self.nrow, self.ncol)).astype(np.str)
             for obj in self.state.keys():

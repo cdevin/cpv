@@ -37,24 +37,27 @@ class MLP2(nn.Module):
     
 
 class CNN2(nn.Module):
-    def __init__(self, in_channels, out_channels=4, feature_dim=64, agent_centric = False):
+    def __init__(self, in_channels, out_channels=4, feature_dim=64):
         super().__init__()
         self.feature_dim = feature_dim
         #self.fc_out = out_channels*11*10#*22*20
-        if agent_centric:
-            self.fc_out = out_channels*22*20#*22*20
+        if in_channels == 9 or in_channels == 18: # Using one-hot encoding
+            self.fc_out = out_channels*3*3  
+            self.conv1 = layer_init(nn.Conv2d(in_channels, 32, kernel_size=5, stride=2,padding=2))
+            self.conv2 = layer_init(nn.Conv2d(32, 64, kernel_size=3, stride=2,padding=1))
+            self.conv3 = layer_init(nn.Conv2d(64, 64, kernel_size=3, stride=1,padding=1))
+            self.convs = [self.conv1, self.conv2,self.conv3]
         else:
-            self.fc_out = out_channels*21*20#*22*20
-        self.fc_out = out_channels*3*3
-        self.conv1 = layer_init(nn.Conv2d(in_channels, 16, kernel_size=3, stride=3))
-        self.conv2 = layer_init(nn.Conv2d(16, 32, kernel_size=5, stride=2,padding=2))
-        self.conv3 = layer_init(nn.Conv2d(32, 64, kernel_size=3, stride=2,padding=1))
-        self.conv4 = layer_init(nn.Conv2d(64, out_channels, kernel_size=3, stride=1,padding=1))
+            self.fc_out = out_channels*3*3        
+            self.conv1 = layer_init(nn.Conv2d(in_channels, 16, kernel_size=3, stride=3))
+            self.conv2 = layer_init(nn.Conv2d(16, 32, kernel_size=5, stride=2,padding=2))
+            self.conv3 = layer_init(nn.Conv2d(32, 64, kernel_size=3, stride=2,padding=1))
+            self.convs = [self.conv1, self.conv2, self.conv3]
+            #self.conv4 = layer_init(nn.Conv2d(64, out_channels, kernel_size=3, stride=1,padding=1))
         #self.conv5 = layer_init(nn.Conv2d(128, 256, kernel_size=3, stride=1,padding=1))
         #self.conv6 = layer_init(nn.Conv2d(256, 128, kernel_size=3, stride=1,padding=1))
         #self.conv7 = layer_init(nn.Conv2d(128, out_channels, kernel_size=3, stride=1,padding=1))
         self.fc_1  = layer_init(nn.Linear(self.fc_out, feature_dim))
-        self.convs = [self.conv1, self.conv2, self.conv3]#, self.conv4,  self.conv7]
 
 
     def forward(self, x):
@@ -75,10 +78,10 @@ class CNN2(nn.Module):
 
 class CompositeDotModelV3(nn.Module):
     """ [f(s_0, a), (g(s*_0, s*_T) -g(s_0, s_t))]"""
-    def __init__(self, device=None,task_embedding_dim=256, relu=False):
+    def __init__(self, device=None,task_embedding_dim=256, relu=False, input_num_channels=3):
         super().__init__()
-        self.goal_cnn = CNN2(6, out_channels=64, feature_dim=task_embedding_dim)
-        self.image_cnn = CNN2(3, out_channels= 64, feature_dim=task_embedding_dim)
+        self.goal_cnn = CNN2(input_num_channels*2, out_channels=64, feature_dim=task_embedding_dim)
+        self.image_cnn = CNN2(input_num_channels, out_channels= 64, feature_dim=task_embedding_dim)
         self.mlp = MLP2(input_dim=task_embedding_dim*2, hidden_dim=256, feature_dim=6, num_outputs=6)
         self.relu = relu
     
@@ -106,10 +109,10 @@ class CompositeDotModelV3(nn.Module):
     
 class TaskEmbeddingModel(nn.Module):
     """ [f(s_0, a), (g(s*_0, s*_T) -g(s_0, s_t))]"""
-    def __init__(self, device=None,task_embedding_dim=256, relu=False):
+    def __init__(self, device=None,task_embedding_dim=256, relu=False, input_num_channels=3):
         super().__init__()
-        self.goal_cnn = CNN2(6, out_channels=64, feature_dim=task_embedding_dim)
-        self.image_cnn = CNN2(3, out_channels= 64, feature_dim=task_embedding_dim)
+        self.goal_cnn = CNN2(input_num_channels*2, out_channels=64, feature_dim=task_embedding_dim)
+        self.image_cnn = CNN2(input_num_channels, out_channels= 64, feature_dim=task_embedding_dim)
         self.mlp = MLP2(input_dim=task_embedding_dim*3, hidden_dim=256, feature_dim=6, num_outputs=6)
         self.relu = relu
     

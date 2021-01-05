@@ -22,11 +22,13 @@ ACTION_MAP = {'R': 0,
 idx = 0
 size = 10
 
-H2 = HammerWorld(res=3, visible_agent=True, use_exit=True, size=[size,size])
-H= HammerWorld(add_objects =[],res=3, visible_agent=True, use_exit=True, agent_centric=False, goal_dim=0, size=[size,size], few_obj=False)
+RENDER_MODE = 'one_hot'
+H2 = HammerWorld(res=3, visible_agent=True, use_exit=True, size=[size,size], render_mode=RENDER_MODE)
+H= HammerWorld(add_objects =[],res=3, visible_agent=True, use_exit=True, agent_centric=False, goal_dim=0, size=[size,size], few_obj=False,
+              render_mode=RENDER_MODE)
 task_success = []
 
-basedirectory = 'data/Oct_4tasks_images/' 
+basedirectory = 'data/4tasks_onehot/' 
 
 if not os.path.isdir(basedirectory):
     os.mkdir(basedirectory)
@@ -95,7 +97,10 @@ while saved < 100000:
             success = policy.eval_traj()
             task_success.append(success)
             ac_coef = 1+H.agent_centric
-            img_size= (H.res*(H.nrow+1)*ac_coef, H.res*(H.ncol)*ac_coef, 3)
+            if RENDER_MODE == 'rgb':
+                img_size= (H.res*(H.nrow+1)*ac_coef, H.res*(H.ncol)*ac_coef, 3)
+            elif RENDER_MODE == 'one_hot':
+                img_size= (H.res*(H.nrow+1)*ac_coef, H.res*(H.ncol)*ac_coef, len(H.SPRITES))
             image_arr = []
             object_counts = {obj: [s['object_counts'][obj] for s in states] for obj in OBJECTS}
             counts_diff = get_counts_diff(object_counts)

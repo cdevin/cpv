@@ -93,6 +93,7 @@ policy_task_list = ['EatBreadPolicy',
                    ]
 EMBEDDING_MODELS =  ['V3', 'TEC', 'TE']
 CONCAT_MODELS = [] 
+RENDER_MODE = 'one_hot'
 
 def eval_counts(ref_counts_diff, counts_diff):
     counts_diff = copy.deepcopy(counts_diff)
@@ -114,7 +115,9 @@ task_id = pol_index
 if args.tasks is not None:
     policy_task_list = args.tasks
 print(policy_task_list)
-H= HammerWorld(add_objects =[],res=3, visible_agent=True, use_exit=True, agent_centric=False, goal_dim=0, size=[10,10], pretty_renderable=True)
+H= HammerWorld(add_objects =[],res=3, visible_agent=True, use_exit=True, agent_centric=False, goal_dim=0, size=[10,10], pretty_renderable=True,
+              render_mode=RENDER_MODE)
+env_dim =(H.res*(H.nrow+1), H.res*(H.ncol), 9)
 
 def process_path(policy, path, num_pol, num_sum):
     images = np.load(path)
@@ -210,7 +213,8 @@ def run_model(policy, path, model_epoch, num_pol, num_sum):
             d = False
             H.episode = episode
             obs = H.reset(min_obj = composite_policy.min_object_nums())
-            init_obs = obs.reshape(33,30,3)
+            init_obs = obs.reshape(env_dim)
+            
             agent = H.state['agent']
             init_state = copy.deepcopy(H.state)
             images = [obs]
@@ -300,11 +304,11 @@ while True:
                     state_dict, epoch, num_per_epoch , _= torch.load(path,  map_location='cpu')
                 else:
                     state_dict, epoch, num_per_epoch , _= torch.load(path)
-                policy = policytype(state_dict, device, model =modeltype , agent_centric=False, env_dim =(H.res*(H.nrow+1), H.res*(H.ncol), 3), task_embedding_dim=args.feature_dim, relu=args.relu)
+                policy = policytype(state_dict, device, model =modeltype , agent_centric=False, env_dim=env_dim, task_embedding_dim=args.feature_dim, relu=args.relu, one_hot=RENDER_MODE=='one_hot')
                 for num_pol, num_sum in [(1,1), (1,2),(2,1), (2,2),(2,4),(4,1), (4,2),(8,1), (16,1)]:
                     successes = []
                     num_steps = []
-                    example_references= 'data/Oct_references_len'+str(num_pol)+'/'
+                    example_references= 'data/one_hot_references_len'+str(num_pol)+'/'
                     task_paths = glob.glob(example_references  +'*.npy')
                     if len(task_paths) == 0:
                         print("gllob was empty", example_references +'*')

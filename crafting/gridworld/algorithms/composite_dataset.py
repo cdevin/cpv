@@ -11,26 +11,30 @@ import time
 class ActionToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
-    def convert_image(self, image):
+    def convert_image(self, image, one_hot=False):
         if isinstance(image, torch.Tensor):
             image = image.permute(2,0,1)
+            if one_hot:
+                return image.type(torch.FloatTensor)
             return image.type(torch.FloatTensor)/255.
         else: 
             image[-1,-1,-1] = 0 
             image = image.transpose((2, 0, 1))
+            if one_hot:
+                return torch.from_numpy(image).type(torch.FloatTensor)
             return torch.from_numpy(image).type(torch.FloatTensor)/255.
 
-    def __call__(self, sample):
+    def __call__(self, sample, one_hot=False):
         image = sample['image']#, sample['last_image']
         action = image[-1,-1,-1]
         for k,v in sample.items():
             if 'image' in k:
-                sample[k] = self.convert_image(v)
+                sample[k] = self.convert_image(v, one_hot=one_hot)
         
         if 'ref_middle' in sample:
-            sample['ref_middle'] = torch.stack([self.convert_image(i) for i in sample['ref_middle']])
+            sample['ref_middle'] = torch.stack([self.convert_image(i, one_hot=one_hot) for i in sample['ref_middle']])
         if 'exp_middle' in sample:
-            sample['exp_middle'] = torch.stack([self.convert_image(i) for i in sample['exp_middle']])
+            sample['exp_middle'] = torch.stack([self.convert_image(i, one_hot=one_hot) for i in sample['exp_middle']])
         #import pdb; pdb.set_trace()
         #limage = limage.transpose((2, 0, 1))
         #print({n: v.shape for n,v in sample.items()})
@@ -40,7 +44,7 @@ class ActionToTensor(object):
 class CompositeDataset(torch.utils.data.Dataset):
     def __init__(self, directory='/persistent/affordance_world/data/paired_compositions2/',
                  train=True, size=None, include_ref=True, pickup_balance=0, is_labeled=False,
-                 num_middle_states=0,
+                 num_middle_states=0, one_hot=False,
                 ):
         self.directory = directory
         self.transform = ActionToTensor()
@@ -49,6 +53,7 @@ class CompositeDataset(torch.utils.data.Dataset):
         self.is_labeled = is_labeled
         self.train = train
         self.num_middle_states =num_middle_states
+        self.one_hot = one_hot
         if train:
             traj_files = natsorted(glob.glob(directory+'/episode*[1-9]_*.npy'))
             print(len(traj_files))
@@ -129,7 +134,6 @@ class CompositeDataset(torch.utils.data.Dataset):
             exp_files = self.expert_files
             ref_files = self.reference_files
         exp = np.load(exp_files[idx][0])
-
             
         #if len(exp) < 3:
         #    print("idx", idx, "exp length is", exp.shape, "file", self.expert_files[idx][0])
@@ -161,7 +165,7 @@ class CompositeDataset(torch.utils.data.Dataset):
         if self.is_labeled:
             sample['task'] = self._get_label(exp_files[idx][0])
             
-        sample = self.transform(sample)
+        sample = self.transform(sample, one_hot=self.one_hot)
 
         if sample['action'] == 6:
             print("idx", idx, "action", sample['action'], "exp length is", len(exp), "file", exp_files[idx][0])
@@ -218,7 +222,7 @@ class IRLDataset(CompositeDataset):
         index = np.random.randint(0, len(exp)-2)
         sample ={'image': exp[index], 
                  'next_image': exp[index+1]}
-        sample = self.transform(sample)
+        sample = self.transform(sample, one_hot=one_hot)
         sample['action'] = np.eye(7)[sample['action']].astype(np.float32)
         return sample
     def __len__(self):
