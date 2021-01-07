@@ -18,19 +18,21 @@ class LearnedBCPolicy():
     
     """
 
-    def __init__(self,  state_dict,device, model=None, agent_centric=False, env_dim=(63,60,3), task_embedding_dim=256,relu=False):
+    def __init__(self,  state_dict,device, model=None, agent_centric=False, env_dim=(63,60,3), task_embedding_dim=256,
+                 relu=False, one_hot=False):
         print("model", model)
-        self.model = model(task_embedding_dim=task_embedding_dim, relu=relu).to(device)
+        self.model = model(task_embedding_dim=task_embedding_dim, relu=relu, input_num_channels=9).to(device)
         self.model.load_state_dict(state_dict)
         self.agent_centric=agent_centric
         self.model.eval()
         self.transformer = ActionToTensor()
         self.device = device
         self.env_dim= env_dim
+        self.one_hot = one_hot
         
     def get_goal_feat(self, img_pre, img_post):
-        img_pre = self.transformer.convert_image(img_pre).unsqueeze(0).to(self.device)
-        img_post = self.transformer.convert_image(img_post).unsqueeze(0).to(self.device)
+        img_pre = self.transformer.convert_image(img_pre, one_hot=self.one_hot).unsqueeze(0).to(self.device)
+        img_post = self.transformer.convert_image(img_post, one_hot=self.one_hot).unsqueeze(0).to(self.device)
         goal_feat = self.model.get_goal_feat(img_pre, img_post)
         return goal_feat
         
@@ -40,8 +42,8 @@ class LearnedBCPolicy():
                 img = img.reshape(self.env_dim)#*255
             else:
                 img = img.reshape(self.env_dim)#*255
-            image = self.transformer.convert_image(img).unsqueeze(0).to(self.device)
-            img_first = self.transformer.convert_image(first_image).unsqueeze(0).to(self.device)
+            image = self.transformer.convert_image(img, one_hot=self.one_hot).unsqueeze(0).to(self.device)
+            img_first = self.transformer.convert_image(first_image, one_hot=self.one_hot).unsqueeze(0).to(self.device)
             if return_delta:
                 logits= self.model.forward(img_first, image,goal_feat=goal_feat, return_delta=return_delta)
             else:
@@ -62,11 +64,11 @@ class LearnedBCPolicy():
             else:
                 img = img.reshape(self.env_dim)#*255
             #import pdb; pdb.set_trace()
-            image = self.transformer.convert_image(img).unsqueeze(0).to(self.device)
-            img_pre = self.transformer.convert_image(img_pre).unsqueeze(0).to(self.device)
-            img_post = self.transformer.convert_image(img_post).unsqueeze(0).to(self.device)
+            image = self.transformer.convert_image(img, one_hot=self.one_hot).unsqueeze(0).to(self.device)
+            img_pre = self.transformer.convert_image(img_pre, one_hot=self.one_hot).unsqueeze(0).to(self.device)
+            img_post = self.transformer.convert_image(img_post, one_hot=self.one_hot).unsqueeze(0).to(self.device)
             if first_image is not None:
-                img_first = self.transformer.convert_image(first_image).unsqueeze(0).to(self.device)
+                img_first = self.transformer.convert_image(first_image, one_hot=self.one_hot).unsqueeze(0).to(self.device)
                 if return_delta:
                     logits= self.model.forward(img_first, image, img_pre, img_post, return_delta=return_delta)
                 else:

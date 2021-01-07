@@ -53,7 +53,7 @@ device = torch.device("cuda" if args.cuda else "cpu")
 kwargs = {'num_workers': 4, 'pin_memory': False} if args.cuda else {}
 print("train_loader")
 
-data_dir = 'data/Oct_4tasks_images/'
+data_dir = 'data/4tasks_onehot/'
 
     
 def worker_init_fn(worker_id):      
@@ -61,19 +61,18 @@ def worker_init_fn(worker_id):
     st0 = np.random.get_state()[1][0]
 
 train_loader = torch.utils.data.DataLoader(
-    CompositeDataset(directory=data_dir,
+    CompositeDataset(directory=data_dir, one_hot=True,
                              train=True, size=args.train_size),
     batch_size=args.batch_size, shuffle=True, worker_init_fn=worker_init_fn, **kwargs)
 print("test_loader")
 test_loader = torch.utils.data.DataLoader(
     CompositeDataset(directory=data_dir,
-                             train=False, size=args.test_size),
+                             train=False, size=args.test_size, one_hot=True),
     batch_size=args.batch_size, shuffle=True, worker_init_fn=worker_init_fn, **kwargs)
 args.train_size = len(train_loader.dataset)
 start_time = time.time()
 result_list = []
-
-model = CompositeDotModelV3(device,task_embedding_dim=args.feature_dim).to(device)
+model = CompositeDotModelV3(device,task_embedding_dim=args.feature_dim, input_num_channels=9).to(device)
 
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 print("done model")
@@ -121,13 +120,12 @@ def train(epoch):
             feat_loss = g_matching_loss(forward_feat+back_feat, final_feat)
             loss+= feat_loss#+feat_loss2
             total_feat_loss += feat_loss.item()
-
         acc = accuracy(logpi,action).item() #/len(image)
         num_batch +=len(image)
         loss.backward()
         train_loss += loss.item() #/len(image)
         train_acc += acc#.item()# /len(image)
-        
+        feat_loss_total += total_feat_loss
         optimizer.step()
         #prev_image, prev_last_image, prev_pos = image, last_image, pos
         #prev_deltas, prev_features = deltas, agent_features
@@ -190,7 +188,7 @@ if args.H:
 if args.P:
     pl_str ='_pair'
 if __name__ == "__main__":
-    filename = 'subtraction_4tasks'+hl_str+pl_str+'_images_feat'+str(args.feature_dim)+'_'+args.letter+'_{:06d}'.format(args.train_size)
+    filename = 'subtraction_4tasks'+hl_str+pl_str+'_onehot_feat'+str(args.feature_dim)+'_'+args.letter+'_{:06d}'.format(args.train_size)
     writer = SummaryWriter(comment=filename)
     basedirectory = 'octresults/'+filename
     print("Tensorbaord logdir",  writer.logdir)
