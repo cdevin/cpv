@@ -62,10 +62,11 @@ while saved < 100000:
     num_policies = random.randint(2,5)
     policy_list = np.random.choice(policy_names, size = num_policies)
     instruction = simple_language(policy_list)
+    import pdb; pdb.set_trace()
     policy = CompositePolicy(policy_list, H.action_space, H2, noise_level=0.1)
     if episode % 1000 == 0 and len(task_success)> 0:
         with open(directory+'/episode{:04d}_'.format(episode)+'.pkl', 'wb') as f:
-            pickle.dump(list_of_samples, f)
+            #pickle.dump(list_of_samples, f)
             saved += len(list_of_samples)
             list_of_samples = []
             

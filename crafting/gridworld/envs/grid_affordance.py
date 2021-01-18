@@ -84,7 +84,7 @@ class HammerWorld(Env):
 
     def __init__(self, size=[10,10], res=39, add_objects=[], visible_agent=True, reward_function=None, state_obs=False, few_obj=False,
                  use_exit=False, agent_centric=True, batch_reward=False, success_function=None, goal_dim=0, pretty_renderable=False,
-                 render_mode='one_hot',
+                 render_mode='one_hot', use_colors=False, num_colors=4
                 ):
         self.nrow, self.ncol = size
         self.reward_range = (0, 1)
@@ -110,6 +110,8 @@ class HammerWorld(Env):
         self.action_space = spaces.Discrete(self.nA)
         self.goal_dim=goal_dim
         self.render_mode = render_mode
+        self.use_colors = use_colors
+        self.num_colors = num_colors
         if self.state_obs:
             self.render_mode = 'state'
         if self.state_obs:
@@ -127,6 +129,8 @@ class HammerWorld(Env):
         elif render_mode == 'one_hot':
             res = 1
             self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*res*self.ncol*res*len(SPRITES)+goal_dim,))
+            if self.use_colors:
+                self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*res*self.ncol*res*(len(SPRITES)+self.num_colors)+goal_dim,))
 
         self.objects = []
         self.res = res
