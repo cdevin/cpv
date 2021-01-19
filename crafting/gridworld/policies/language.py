@@ -1,22 +1,24 @@
 import pdb
 import numpy as np
+import random
+
 USE_COLOR = False
 GRAMMAR = {
-    '<SENT>': ('*', ['<TASK>', '<TASK> and <TASK>', '<TASK>, then <TASK>']),
-    '<TASK>': ('<TASK>', ['ChopTreePolicy', 'ChopRockPolicy', 'EatBreadPolicy', 'BuildHousePolicy', 'MakeBreadPolicy']),
+    #'<SENT>': ('*', ['<TASK>', '<TASK> and <TASK>', '<TASK>, then <TASK>']),
+    '<SENT>': ('*', ['ChopTreePolicy', 'ChopRockPolicy', 'EatBreadPolicy', 'BuildHousePolicy', 'MakeBreadPolicy']),
 #     'ChopTreePolicy': ('chop_tree(<DET>, <COLOR>, <LOC>)', ["<PICKUP_AXE> chop <DET> <COLOR> tree <LOC>"]),
 #     'ChopRockPolicy': ('chop_rock(<DET>, <COLOR>, <LOC>)', ["break <DET> <COLOR> rock <LOC>"]),
 #     'EatBreadPolicy': ('eat_bread(<DET>, <COLOR>, <LOC>)', ["eat <DET> <COLOR> bread <LOC>"]),
 #     'BuildHousePolicy': ('build_house(<DET>, <COLOR>, <LOC>)', ["build <DET> <COLOR> house <LOC>"]),
 #     'MakeBreadPolicy': ('make_bread(<DET>, <COLOR>, <LOC>)', ["make <DET> <COLOR> bread <LOC>"]),
-    'ChopTreePolicy': ('(ChopTreePolicy, <DET>)', ["cut down <DET> <COLOR> tree <LOC>", "<USE_AXE> <DET> <COLOR> tree <LOC>",
-                                                  "make <DET> <COLOR> sticks <LOC>"]),
-    'ChopRockPolicy': ('(ChopRockPolicy, <DET>)', ["break <DET> <COLOR> rock <LOC>",  "<USE_HAMMER> <DET> <COLOR> rock <LOC>"]),
-    'EatBreadPolicy': ('(EatBreadPolicy, <DET>)', ["eat <DET> <COLOR> bread <LOC>"]),
-    'BuildHousePolicy': ('(BuildHousePolicy, <DET>)', ["build <DET> <COLOR> house <LOC>", "<USE_HAMMER> <DET> <COLOR> sticks <LOC>"]),
-    'MakeBreadPolicy': ('(MakeBreadPolicy, <DET>)', ["make <DET> <COLOR> bread <LOC>", "<USE_AXE> <DET> <COLOR> wheat <LOC>"]),
-    '<USE_AXE>': ('', ['<PICKUP_AXE> <USE>']),
-    '<USE_HAMMER>': ('', ['<PICKUP_HAMMER> <USE>']),
+    'ChopTreePolicy': ('("ChopTreePolicy", <DET>)', ["cut down <DET> <COLOR> tree <LOC>", "<USE_AXE> <DET> <COLOR> tree <LOC>",
+                                                  "make <DET> <COLOR> stick <LOC>"]),
+    'ChopRockPolicy': ('("ChopRockPolicy", <DET>)', ["break <DET> <COLOR> rock <LOC>",  "<USE_HAMMER> <DET> <COLOR> rock <LOC>"]),
+    'EatBreadPolicy': ('("EatBreadPolicy", <DET>)', ["eat <DET> <COLOR> bread <LOC>"]),
+    'BuildHousePolicy': ('("BuildHousePolicy", <DET>)', ["build <DET> <COLOR> house <LOC>", "<USE_HAMMER> <DET> <COLOR> stick <LOC>"]),
+    'MakeBreadPolicy': ('("MakeBreadPolicy", <DET>)', ["make <DET> <COLOR> bread <LOC>", "<USE_AXE> <DET> <COLOR> wheat <LOC>"]),
+    '<USE_AXE>': ('', ['<PICKUP_AXE> <USE>', 'use an axe on']),
+    '<USE_HAMMER>': ('', ['<PICKUP_HAMMER> <USE>', 'use a hammer on']),
     '<PICKUP_AXE>': ('', ['pickup an axe']),
     '<PICKUP_HAMMER>': ('', ['pickup a hammer']),
     '<USE>': ('', ['and use it on', 'then bring it to']),
@@ -43,6 +45,8 @@ ONTOLOGY = {
     'two': '2',
     '': '*' 
 }
+
+COMBINERS = [' and ', " then "]
 
 def expand(non_terminal): 
 
@@ -94,19 +98,26 @@ def collapse(logical_forms):
 
     return logical_form
 
-def simple_language(policy_list):
-
-    for i in range(30): 
+def simple_language(num_tasks=1):
+    policy_list = []
+    total_sentence = ''
+    while len(policy_list) < num_tasks: 
 
         # Sample sentence and logical form from grammar. 
         sentence, logical_forms = expand('<SENT>')   
         sentence = ' '.join(sentence.split())
-        print(sentence, logical_forms)
         # Resolve logical form. 
         logical_form = collapse(logical_forms)
+        pol, times = eval(logical_form)
+        new_policies = [pol]*times
+        if len(policy_list) + len(new_policies) <= num_tasks:
+            policy_list += new_policies
+            if len(total_sentence) == 0:
+                combiner = ''
+            else:
+                combiner = random.sample(COMBINERS,1)[0] 
+            total_sentence = total_sentence + combiner + sentence
+        
+    #print(total_sentence, policy_list)
 
-        print([sentence, logical_form ])
-
-    pdb.set_trace()
-
-    return sentence
+    return total_sentence, policy_list

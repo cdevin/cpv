@@ -30,7 +30,7 @@ H= HammerWorld(add_objects =[],res=3, visible_agent=True, use_exit=True, agent_c
               render_mode=RENDER_MODE)
 task_success = []
 
-basedirectory = 'data/4tasks_onehot_pkl/' 
+basedirectory = 'data/2tasks_complexlang_onehot_pkl/' 
 
 if not os.path.isdir(basedirectory):
     os.mkdir(basedirectory)
@@ -59,14 +59,14 @@ episode = 0
 list_of_samples = []
 
 while saved < 100000:
-    num_policies = random.randint(2,5)
-    policy_list = np.random.choice(policy_names, size = num_policies)
-    instruction = simple_language(policy_list)
-    import pdb; pdb.set_trace()
+    num_policies = random.randint(1,2)
+    #policy_list = np.random.choice(policy_names, size = num_policies)
+    instruction, policy_list = simple_language(num_policies)
+    #import pdb; pdb.set_trace()
     policy = CompositePolicy(policy_list, H.action_space, H2, noise_level=0.1)
     if episode % 1000 == 0 and len(task_success)> 0:
         with open(directory+'/episode{:04d}_'.format(episode)+'.pkl', 'wb') as f:
-            #pickle.dump(list_of_samples, f)
+            pickle.dump(list_of_samples, f)
             saved += len(list_of_samples)
             list_of_samples = []
             
@@ -126,7 +126,7 @@ while saved < 100000:
             actions = [ac[0] for ac in actions]
             #data[style] = (success, image_arr, counts_diff)
             if task_success:
-                sample = (instruction, blosc.pack_array(image_arr), None, actions)
+                sample = (instruction, blosc.pack_array(image_arr), actions, actions)
                 list_of_samples.append(sample)
                # np.save(directory+'/episode{:04d}_'.format(episode)+style+'.npy', image_arr)
         episode += 1
