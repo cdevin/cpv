@@ -8,7 +8,9 @@ from six import StringIO, b
 import copy
 from gym import utils
 from gym.envs.toy_text import discrete
-from scipy.misc import imresize 
+#from scipy.misc import imresize 
+#from PIL import Image
+
 RENDER_DIR = 'renderings/'
 LEFT = 0
 DOWN = 1
@@ -128,7 +130,7 @@ class HammerWorld(Env):
             self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*res*self.ncol*res*3+goal_dim,))
         elif render_mode == 'one_hot':
             res = 1
-            self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*res*self.ncol*res*len(SPRITES)+goal_dim,))
+            self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*self.ncol*len(SPRITES)+goal_dim,))
             if self.use_colors:
                 self.observation_space = spaces.Box(low=0, high=1., shape=((self.nrow+1)*res*self.ncol*res*(len(SPRITES)+self.num_colors)+goal_dim,))
 

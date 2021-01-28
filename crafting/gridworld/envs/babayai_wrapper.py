@@ -53,8 +53,12 @@ class GymCraftingEnv(Env):
         self.policy_env = HammerWorld(add_objects =[],res=1, visible_agent=True, use_exit=False, 
                                agent_centric=False, goal_dim=0, size=[10, 10],
                                few_obj=False, render_mode='one_hot')
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
+
     def reset(self):
         instruction, policy_list = simple_language(self.num_tasks)
+        self.instruction = instruction
         policy = CompositePolicy(policy_list, self.env.action_space, self.policy_env, noise_level=0.1)
         self.policy = policy
         self.policy_list = policy_list
@@ -62,7 +66,8 @@ class GymCraftingEnv(Env):
         self.ref_counts_diff = get_true_counts_diff(policy_list)
         obs = self.env.reset(min_obj = self.policy.min_object_nums())
         self.states = [copy.deepcopy(self.env.state)]
-        return obs
+        obs = np.reshape(obs, (11,10,9))
+        return {'image': obs, 'instr': instruction}
         
     def step(self, a):
         obs, r, d, info = self.env.step(a)
@@ -76,6 +81,7 @@ class GymCraftingEnv(Env):
         if success:
             d = True
             r = 1
-        return obs, r, d, info
+        obs = np.reshape(obs, (11,10,9))
+        return {'image': obs, 'mission': self.instruction}, r, d, info
     
     

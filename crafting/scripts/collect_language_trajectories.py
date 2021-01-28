@@ -30,7 +30,7 @@ H= HammerWorld(add_objects =[],res=3, visible_agent=True, use_exit=True, agent_c
               render_mode=RENDER_MODE)
 task_success = []
 
-basedirectory = 'data/2tasks_complexlang_onehot_pkl/' 
+basedirectory = 'data/10k_demos/' 
 
 if not os.path.isdir(basedirectory):
     os.mkdir(basedirectory)
@@ -58,18 +58,13 @@ def get_counts_diff(counts):
 episode = 0
 list_of_samples = []
 
-while saved < 100000:
+while episode < 1000:
     num_policies = random.randint(1,2)
     #policy_list = np.random.choice(policy_names, size = num_policies)
     instruction, policy_list = simple_language(num_policies)
     #import pdb; pdb.set_trace()
     policy = CompositePolicy(policy_list, H.action_space, H2, noise_level=0.1)
     if episode % 1000 == 0 and len(task_success)> 0:
-        with open(directory+'/episode{:04d}_'.format(episode)+'.pkl', 'wb') as f:
-            pickle.dump(list_of_samples, f)
-            saved += len(list_of_samples)
-            list_of_samples = []
-            
         print(episode, sum(task_success)/len(task_success), "saved", saved)
     if True:
         data= {}
@@ -96,11 +91,14 @@ while saved < 100000:
                 if not d:
                     a = policy.get_action(H.state)
                 else:
-                    a = -1
+                    a = 0
                     
                 if a is None:
                     a = 6
-                actions.append([a,agent[0], agent[1], d])
+                saved_a = a
+                if a == 6:
+                    saved_a = 0
+                actions.append([saved_a,agent[0], agent[1], d])
                 states.append(copy.deepcopy(H.state))
                 step+=1
                 
@@ -130,4 +128,8 @@ while saved < 100000:
                 list_of_samples.append(sample)
                # np.save(directory+'/episode{:04d}_'.format(episode)+style+'.npy', image_arr)
         episode += 1
+with open(directory+'/episode_.pkl', 'wb') as f:
+    pickle.dump(list_of_samples, f)
+    saved += len(list_of_samples)
+    list_of_samples = []
 print( "success rate", sum(task_success)/len(task_success), saved/episode)
